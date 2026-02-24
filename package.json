@@ -1,0 +1,48 @@
+{
+  "name": "reefing-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate --config prisma/prisma.config.ts && next build",
+    "start": "next start",
+    "db:generate": "prisma generate --config prisma/prisma.config.ts",
+    "db:migrate": "prisma migrate dev --config prisma/prisma.config.ts",
+    "db:migrate:prod": "prisma migrate deploy --config prisma/prisma.config.ts",
+    "db:studio": "prisma studio --config prisma/prisma.config.ts"
+  },
+  "dependencies": {
+    "@auth0/nextjs-auth0": "^4.0.0",
+    "@aws-sdk/client-s3": "^3.996.0",
+    "@aws-sdk/s3-request-presigner": "^3.996.0",
+    "@mantine/core": "^8.0.0",
+    "@mantine/dates": "^8.3.15",
+    "@mantine/form": "^8.3.15",
+    "@mantine/hooks": "^8.0.0",
+    "@neondatabase/serverless": "^0.10.0",
+    "@prisma/adapter-neon": "^7.0.0",
+    "@prisma/client": "^7.4.1",
+    "@prisma/client-runtime-utils": "^7.4.1",
+    "dayjs": "^1.11.19",
+    "next": "^16.0.0",
+    "prisma": "^7.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sass": "^1.80.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "dotenv": "^17.3.1",
+    "typescript": "^5.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@prisma/engines",
+      "prisma",
+      "sharp"
+    ]
+  }
+}

@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TankType {
+  FOWLR
+  REEF
+  NANO
+  PREDATOR
+}
+
+enum CoralPlacement {
+  SANDBED
+  LOW_ROCK
+  MID_ROCK
+  HIGH_ROCK
+  FRAG_RACK
+}
+
+enum LightingLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum FlowLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Tank {
+  id          String      @id @default(cuid())
+  name        String
+  volumeGal   Float
+  type        TankType
+  setupDate   DateTime?
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos      TankPhoto[]
+  corals      Coral[]
+}
+
+model TankPhoto {
+  id        String   @id @default(cuid())
+  s3Key     String
+  url       String
+  tankId    String
+  tank      Tank     @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Coral {
+  id           String          @id @default(cuid())
+  name         String
+  species      String?
+  placement    CoralPlacement?
+  lighting     LightingLevel?
+  flow         FlowLevel?
+  acquiredDate DateTime?
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  tankId       String
+  tank         Tank            @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  photos       CoralPhoto[]
+}
+
+model CoralPhoto {
+  id        String   @id @default(cuid())
+  s3Key     String
+  url       String
+  coralId   String
+  coral     Coral    @relation(fields: [coralId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id        String   @id @default(cuid())
+  auth0Id   String   @unique
+  username  String   @unique
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tanks     Tank[]
+}

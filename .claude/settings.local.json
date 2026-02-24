@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm create next-app@latest . --typescript --app --no-tailwind --no-eslint --src-dir --no-turbopack --import-alias \"@/*\")",
+      "Bash(pnpm install)",
+      "Bash(pnpm approve-builds)",
+      "Bash(pnpm rebuild prisma @prisma/engines)",
+      "Bash(pnpm next build)",
+      "Bash(DATABASE_URL=\"postgresql://dummy:dummy@localhost/dummy\" pnpm db:generate)",
+      "Bash(pnpm add @prisma/client)",
+      "Bash(DATABASE_URL=\"postgresql://dummy:dummy@localhost/dummy\" pnpm next build)",
+      "Bash(CI=true pnpm install)",
+      "Bash(pnpm add -D dotenv)",
+      "Bash(node -e \"console.log\\(require\\(''crypto''\\).randomBytes\\(32\\).toString\\(''hex''\\)\\)\")",
+      "Bash(pnpm add @prisma/client-runtime-utils)",
+      "Bash(pnpm db:migrate)",
+      "Bash(pnpm db:generate)",
+      "Bash(pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner)",
+      "Bash(pnpm db:generate --config prisma/prisma.config.ts)",
+      "Bash(pnpm build)",
+      "Bash(ls /c/Users/scott/workspace/reefing-app/src/app/tanks/[id]/corals/)"
+    ]
+  }
+}
