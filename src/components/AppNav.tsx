@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Container, Group, Text, Button, Title } from "@mantine/core";
 import { getAuthUser } from "@/lib/auth/session";
 
@@ -8,14 +9,11 @@ export async function AppNav() {
     <nav className="app-nav">
       <Container size="md">
         <Group justify="space-between" align="center" py="sm">
-          <Title
-            order={4}
-            component="a"
-            href="/"
-            style={{ textDecoration: "none", color: "inherit", letterSpacing: "-0.3px" }}
-          >
-            ReefBuilder
-          </Title>
+          <Link href="/" style={{ textDecoration: "none", color: "inherit" }}>
+            <Title order={4} style={{ letterSpacing: "-0.3px" }}>
+              ReefBuilder
+            </Title>
+          </Link>
           <Group gap="sm" align="center">
             <Button component="a" href="/users" variant="subtle" size="xs" color="gray">
               Profiles
