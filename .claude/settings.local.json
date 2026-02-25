@@ -42,7 +42,13 @@
       "Bash(pnpm prisma migrate deploy --config prisma/prisma.config.ts)",
       "Bash(node -e \":*)",
       "mcp__Neon__run_sql",
-      "Bash(ls /c/Users/scott/workspace/reefing-app/next.config*)"
+      "Bash(ls /c/Users/scott/workspace/reefing-app/next.config*)",
+      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); print\\(json.dumps\\(p.get\\(''scripts'',{}\\), indent=2\\)\\)\")",
+      "Bash(curl -s -X POST \"https://ep-calm-heart-airbkkvd.neonauth.c-4.us-east-1.aws.neon.tech/neondb/auth/sign-in/email\" -H \"Content-Type: application/json\" -H \"Origin: https://reef-app-nine.vercel.app\" -d '{\"\"email\"\":\"\"test@test.com\"\",\"\"password\"\":\"\"testpassword123\"\"}' -w \"\\\\nHTTP Status: %{http_code}\")",
+      "Bash(curl -s -X POST \"https://ep-calm-heart-airbkkvd.neonauth.c-4.us-east-1.aws.neon.tech/neondb/auth/sign-up/email\" -H \"Content-Type: application/json\" -H \"Origin: https://reef-app-nine.vercel.app\" -d '{\"\"email\"\":\"\"debugtest@test.com\"\",\"\"password\"\":\"\"testpassword123\"\",\"\"name\"\":\"\"Debug Test\"\"}' -w \"\\\\nHTTP Status: %{http_code}\")",
+      "Bash(git show c69040b -- src/app/api/auth/[...path]/route.ts)",
+      "Bash(curl -sv -X POST \"https://ep-calm-heart-airbkkvd.neonauth.c-4.us-east-1.aws.neon.tech/neondb/auth/sign-in/email\" -H \"Content-Type: application/json\" -H \"Origin: https://reef-app-nine.vercel.app\" -H \"x-neon-auth-middleware: true\" -d '{\"\"email\"\":\"\"test@test.com\"\",\"\"password\"\":\"\"wrongpass\"\"}')",
+      "Bash(pnpm view @neondatabase/auth versions)"
     ]
   }
 }

@@ -19,7 +19,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ path: stri
     const res = await handlers.POST(req, ctx);
     if (!res.ok) {
       const text = await res.clone().text();
-      console.error(`[auth:POST] ${new URL(req.url).pathname} → ${res.status}:`, text);
+      const hdrs = Object.fromEntries(res.headers.entries());
+      console.error(`[auth:POST] ${new URL(req.url).pathname} → ${res.status}:`, text, "headers:", hdrs);
     }
     return res;
   } catch (err) {
