@@ -25,6 +25,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ path: stri
   const contentType = req.headers.get("content-type") || "application/json";
   const cookie = req.headers.get("cookie") || "";
 
+  console.log(`[auth:POST] ${upstreamPath} body:${body.length}chars origin:${origin}`);
+
   try {
     const upstream = await fetch(upstreamUrl, {
       method: "POST",
@@ -39,7 +41,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ path: stri
     const text = await upstream.text();
 
     if (!upstream.ok) {
-      console.error(`[auth:POST] ${upstreamPath} → ${upstream.status}:`, text);
+      const hdrs = Object.fromEntries(upstream.headers.entries());
+      console.error(`[auth:POST] ${upstreamPath} → ${upstream.status}:`, text || "(empty)", "headers:", JSON.stringify(hdrs));
     }
 
     const resHeaders = new Headers();
