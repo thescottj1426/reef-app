@@ -23,9 +23,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ path: stri
   const body = await req.text();
   const origin = req.headers.get("origin") || new URL(req.url).origin;
   const contentType = req.headers.get("content-type") || "application/json";
-  const cookie = req.headers.get("cookie") || "";
 
-  console.log(`[auth:POST] ${upstreamPath} body:${body.length}chars origin:${origin}`);
+  // Only forward session cookies for sign-out and session management, not for sign-in/sign-up
+  const needsCookies = upstreamPath === "sign-out" || upstreamPath === "revoke-session" || upstreamPath === "refresh-token";
+  const cookie = needsCookies ? (req.headers.get("cookie") || "") : "";
+
+  console.log(`[auth:POST] ${upstreamPath} body:${body.length}chars`);
 
   try {
     const upstream = await fetch(upstreamUrl, {
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ path: stri
       headers: {
         "content-type": contentType,
         "origin": origin,
-        "cookie": cookie,
+        ...(cookie ? { "cookie": cookie } : {}),
       },
       body: body || undefined,
     });
