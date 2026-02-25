@@ -56,7 +56,9 @@
       "Bash(git push)",
       "Bash(git push --set-upstream origin main)",
       "Bash(curl -sv -X POST \"https://ep-calm-heart-airbkkvd.neonauth.c-4.us-east-1.aws.neon.tech/neondb/auth/sign-in/email\" -H \"Content-Type: application/json\" -H \"Origin: https://reef-app-nine.vercel.app\" -d '{\"\"email\"\":\"\"debugtest@test.com\"\",\"\"password\"\":\"\"testpassword123\"\"}')",
-      "Bash(curl -sv --http2 -X POST \"https://ep-calm-heart-airbkkvd.neonauth.c-4.us-east-1.aws.neon.tech/neondb/auth/sign-in/email\" -H \"Content-Type: application/json\" -H \"Origin: https://reef-app-nine.vercel.app\" -d '{\"\"email\"\":\"\"debugtest@test.com\"\",\"\"password\"\":\"\"testpassword123\"\"}')"
+      "Bash(curl -sv --http2 -X POST \"https://ep-calm-heart-airbkkvd.neonauth.c-4.us-east-1.aws.neon.tech/neondb/auth/sign-in/email\" -H \"Content-Type: application/json\" -H \"Origin: https://reef-app-nine.vercel.app\" -d '{\"\"email\"\":\"\"debugtest@test.com\"\",\"\"password\"\":\"\"testpassword123\"\"}')",
+      "Bash(curl -s -X POST \"https://ep-calm-heart-airbkkvd.neonauth.c-4.us-east-1.aws.neon.tech/neondb/auth/sign-in/email\" -H \"Content-Type: application/json\" -H \"Origin: https://reef-app-nine.vercel.app\" -w \"\\\\nHTTP: %{http_code}\")",
+      "Bash(git add src/app/api/debug-auth/route.ts)"
     ]
   }
 }
