@@ -5,7 +5,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
 import { AppNav } from "@/components/AppNav";
-import { Container, Title, Text, Group, Badge, Button, Stack, SimpleGrid, Card, CardSection } from "@mantine/core";
+import { Container, Title, Text, Group, Badge, Button, Stack, SimpleGrid, Card, CardSection, Paper } from "@mantine/core";
 import { PhotoGallery } from "@/features/tanks/components/PhotoGallery";
 
 const placementLabels: Record<string, string> = {
@@ -98,7 +98,7 @@ export default async function TankPage({ params }: { params: Promise<{ id: strin
             </Stack>
           </Card>
 
-          <div>
+          <Paper withBorder p="lg">
             <Group justify="space-between" align="center" mb="sm">
               <Title order={3}>Corals</Title>
               <Button component="a" href={`/tanks/${id}/corals/new`} size="sm">
@@ -139,12 +139,12 @@ export default async function TankPage({ params }: { params: Promise<{ id: strin
                 ))}
               </SimpleGrid>
             )}
-          </div>
+          </Paper>
 
-          <div>
+          <Paper withBorder p="lg">
             <Title order={3} mb="sm">Photos</Title>
             <PhotoGallery tankId={id} photos={photos} />
-          </div>
+          </Paper>
         </Stack>
       </Container>
     </>

@@ -12,6 +12,7 @@ import {
   SimpleGrid,
   Badge,
   Box,
+  Paper,
 } from "@mantine/core";
 
 export default async function HomePage() {
@@ -34,18 +35,40 @@ export default async function HomePage() {
       <AppNav />
       <Container size="md" py="xl">
         <Stack gap="xl">
-          <Box>
-            <Group justify="space-between" align="center" mb="sm">
-              <Title order={3}>My Tanks</Title>
+          <Paper p="lg" withBorder>
+            <Group justify="space-between" align="center">
+              <Box>
+                <Title order={2}>Welcome back</Title>
+                <Text c="dimmed" size="sm" mt={4}>
+                  Manage your tanks and track coral growth in one place.
+                </Text>
+              </Box>
               <Button component="a" href="/tanks/new" size="sm">
                 Add tank
               </Button>
             </Group>
+          </Paper>
+
+          <Box>
+            <Group justify="space-between" align="center" mb="sm">
+              <Title order={3}>My Tanks</Title>
+              <Badge variant="light" size="lg">
+                {tanks.length}
+              </Badge>
+            </Group>
 
             {tanks.length === 0 ? (
-              <Text c="dimmed" size="sm">
-                You haven&apos;t added any tanks yet.
-              </Text>
+              <Paper withBorder p="lg">
+                <Stack gap={8}>
+                  <Text fw={600}>No tanks yet</Text>
+                  <Text c="dimmed" size="sm">
+                    Add your first tank to start tracking corals, photos, and setup details.
+                  </Text>
+                  <Button component="a" href="/tanks/new" size="xs" w="fit-content">
+                    Create first tank
+                  </Button>
+                </Stack>
+              </Paper>
             ) : (
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                 {tanks.map((tank) => (

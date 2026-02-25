@@ -35,7 +35,14 @@
       "Bash(node -e \"const m = require\\(''./node_modules/@neondatabase/auth/react/ui''\\); console.log\\(Object.keys\\(m\\)\\)\")",
       "Bash(node -e \"const { Card } = require\\(''./node_modules/@mantine/core''\\); console.log\\(''Card.Section:'', Card.Section\\)\")",
       "Bash(node -e \"const p = require\\(''./node_modules/@neondatabase/auth/package.json''\\); console.log\\(JSON.stringify\\(p.exports, null, 2\\)\\)\" /c/Users/scott/workspace/reefing-app)",
-      "Bash(node -e \"const m = require\\(''./node_modules/@mantine/core''\\); console.log\\(''CardSection:'', typeof m.CardSection\\)\" /c/Users/scott/workspace/reefing-app)"
+      "Bash(node -e \"const m = require\\(''./node_modules/@mantine/core''\\); console.log\\(''CardSection:'', typeof m.CardSection\\)\" /c/Users/scott/workspace/reefing-app)",
+      "Bash(pnpm prisma migrate dev --name add_user_profile_fields --config prisma/prisma.config.ts)",
+      "Bash(ls /c/Users/scott/workspace/reefing-app/.env*)",
+      "Bash(pnpm prisma generate --config prisma/prisma.config.ts)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_EPJh3cU7iRpA@ep-calm-heart-airbkkvd-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" pnpm prisma migrate deploy --config prisma/prisma.config.ts)",
+      "Bash(node -e \":*)",
+      "mcp__Neon__run_sql",
+      "Bash(ls /c/Users/scott/workspace/reefing-app/next.config*)"
     ]
   }
 }
