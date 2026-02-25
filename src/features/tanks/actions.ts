@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { auth0 } from "@/lib/auth0";
+import { getAuthUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
 import { TankType } from "@/generated/prisma";
@@ -22,14 +22,7 @@ type CreateTankInput = {
 };
 
 export async function createTank(input: CreateTankInput) {
-  const session = await auth0.getSession();
-  if (!session) redirect("/login");
-
-  const dbUser = await prisma.user.findUnique({
-    where: { auth0Id: session.user.sub },
-    select: { id: true },
-  });
-  if (!dbUser) throw new Error("User record not found");
+  const { user } = await getAuthUser();
 
   const name = input.name.trim();
   if (!name) throw new Error("Name is required");
@@ -43,19 +36,19 @@ export async function createTank(input: CreateTankInput) {
       type: input.type,
       setupDate: input.setupDate ? new Date(input.setupDate) : null,
       description: input.description.trim() || null,
-      userId: dbUser.id,
+      userId: user.id,
     },
   });
 
   redirect("/");
 }
 
-async function verifyTankOwnership(tankId: string, auth0Id: string) {
+async function verifyTankOwnership(tankId: string, neonAuthId: string) {
   const tank = await prisma.tank.findUnique({
     where: { id: tankId },
-    select: { userId: true, user: { select: { auth0Id: true } } },
+    select: { userId: true, user: { select: { neonAuthId: true } } },
   });
-  if (!tank || tank.user.auth0Id !== auth0Id) {
+  if (!tank || tank.user.neonAuthId !== neonAuthId) {
     throw new Error("Tank not found");
   }
   return tank;
@@ -66,9 +59,8 @@ export async function getPresignedUploadUrl(
   filename: string,
   contentType: string
 ) {
-  const session = await auth0.getSession();
-  if (!session) redirect("/login");
-  await verifyTankOwnership(tankId, session.user.sub);
+  const { session } = await getAuthUser();
+  await verifyTankOwnership(tankId, session.user.id);
 
   const s3Key = `tanks/${tankId}/${randomUUID()}-${filename}`;
   const presignedUrl = await getSignedUrl(
@@ -81,9 +73,8 @@ export async function getPresignedUploadUrl(
 }
 
 export async function saveTankPhoto(tankId: string, s3Key: string) {
-  const session = await auth0.getSession();
-  if (!session) redirect("/login");
-  await verifyTankOwnership(tankId, session.user.sub);
+  const { session } = await getAuthUser();
+  await verifyTankOwnership(tankId, session.user.id);
 
   const url = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${s3Key}`;
   await prisma.tankPhoto.create({ data: { tankId, s3Key, url } });
@@ -91,14 +82,13 @@ export async function saveTankPhoto(tankId: string, s3Key: string) {
 }
 
 export async function deleteTankPhoto(photoId: string, tankId: string) {
-  const session = await auth0.getSession();
-  if (!session) redirect("/login");
+  const { session } = await getAuthUser();
 
   const photo = await prisma.tankPhoto.findUnique({
     where: { id: photoId },
-    select: { s3Key: true, tank: { select: { user: { select: { auth0Id: true } } } } },
+    select: { s3Key: true, tank: { select: { user: { select: { neonAuthId: true } } } } },
   });
-  if (!photo || photo.tank.user.auth0Id !== session.user.sub) {
+  if (!photo || photo.tank.user.neonAuthId !== session.user.id) {
     throw new Error("Photo not found");
   }
 

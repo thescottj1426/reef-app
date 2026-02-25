@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { auth0 } from "@/lib/auth0";
+import { getAuthUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
 import type { CoralPlacement, LightingLevel, FlowLevel } from "@/generated/prisma";
@@ -13,22 +13,22 @@ import type { CoralPlacement, LightingLevel, FlowLevel } from "@/generated/prism
 const BUCKET = process.env.AWS_S3_BUCKET!;
 const REGION = process.env.AWS_REGION!;
 
-async function verifyTankOwnership(tankId: string, auth0Id: string) {
+async function verifyTankOwnership(tankId: string, neonAuthId: string) {
   const tank = await prisma.tank.findUnique({
     where: { id: tankId },
-    select: { user: { select: { auth0Id: true } } },
+    select: { user: { select: { neonAuthId: true } } },
   });
-  if (!tank || tank.user.auth0Id !== auth0Id) {
+  if (!tank || tank.user.neonAuthId !== neonAuthId) {
     throw new Error("Tank not found");
   }
 }
 
-async function verifyCoralOwnership(coralId: string, auth0Id: string) {
+async function verifyCoralOwnership(coralId: string, neonAuthId: string) {
   const coral = await prisma.coral.findUnique({
     where: { id: coralId },
-    select: { tankId: true, tank: { select: { user: { select: { auth0Id: true } } } } },
+    select: { tankId: true, tank: { select: { user: { select: { neonAuthId: true } } } } },
   });
-  if (!coral || coral.tank.user.auth0Id !== auth0Id) {
+  if (!coral || coral.tank.user.neonAuthId !== neonAuthId) {
     throw new Error("Coral not found");
   }
   return coral;
@@ -46,9 +46,8 @@ export async function createCoral(
     notes?: string;
   }
 ) {
-  const session = await auth0.getSession();
-  if (!session) redirect("/login");
-  await verifyTankOwnership(tankId, session.user.sub);
+  const { session } = await getAuthUser();
+  await verifyTankOwnership(tankId, session.user.id);
 
   const coral = await prisma.coral.create({
     data: {
@@ -72,9 +71,8 @@ export async function getPresignedCoralUploadUrl(
   filename: string,
   contentType: string
 ) {
-  const session = await auth0.getSession();
-  if (!session) redirect("/login");
-  const coral = await verifyCoralOwnership(coralId, session.user.sub);
+  const { session } = await getAuthUser();
+  const coral = await verifyCoralOwnership(coralId, session.user.id);
 
   const s3Key = `corals/${coralId}/${randomUUID()}-${filename}`;
   const presignedUrl = await getSignedUrl(
@@ -87,9 +85,8 @@ export async function getPresignedCoralUploadUrl(
 }
 
 export async function saveCoralPhoto(coralId: string, s3Key: string) {
-  const session = await auth0.getSession();
-  if (!session) redirect("/login");
-  const coral = await verifyCoralOwnership(coralId, session.user.sub);
+  const { session } = await getAuthUser();
+  const coral = await verifyCoralOwnership(coralId, session.user.id);
 
   const url = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${s3Key}`;
   await prisma.coralPhoto.create({ data: { coralId, s3Key, url } });
@@ -97,8 +94,7 @@ export async function saveCoralPhoto(coralId: string, s3Key: string) {
 }
 
 export async function deleteCoralPhoto(photoId: string, coralId: string) {
-  const session = await auth0.getSession();
-  if (!session) redirect("/login");
+  const { session } = await getAuthUser();
 
   const photo = await prisma.coralPhoto.findUnique({
     where: { id: photoId },
@@ -107,12 +103,12 @@ export async function deleteCoralPhoto(photoId: string, coralId: string) {
       coral: {
         select: {
           tankId: true,
-          tank: { select: { user: { select: { auth0Id: true } } } },
+          tank: { select: { user: { select: { neonAuthId: true } } } },
         },
       },
     },
   });
-  if (!photo || photo.coral.tank.user.auth0Id !== session.user.sub) {
+  if (!photo || photo.coral.tank.user.neonAuthId !== session.user.id) {
     throw new Error("Photo not found");
   }
 

@@ -18,7 +18,24 @@
       "Bash(pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner)",
       "Bash(pnpm db:generate --config prisma/prisma.config.ts)",
       "Bash(pnpm build)",
-      "Bash(ls /c/Users/scott/workspace/reefing-app/src/app/tanks/[id]/corals/)"
+      "Bash(ls /c/Users/scott/workspace/reefing-app/src/app/tanks/[id]/corals/)",
+      "mcp__Neon__list_projects",
+      "mcp__Neon__provision_neon_auth",
+      "mcp__Neon__list_docs_resources",
+      "mcp__Neon__get_doc_resource",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(pnpm add @neondatabase/auth)",
+      "Bash(pnpm remove @auth0/nextjs-auth0)",
+      "Bash(pnpm db:migrate 2)",
+      "Bash(1:*)",
+      "Bash(pnpm prisma migrate dev --config prisma/prisma.config.ts --create-only --name rename_auth0id_to_neonauthid)",
+      "Bash(pnpm prisma migrate deploy --config prisma/prisma.config.ts)",
+      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); print\\(json.dumps\\(p.get\\(''exports'',{}\\), indent=2\\)\\)\")",
+      "Bash(grep -v \"^\\\\s*//\")",
+      "Bash(node -e \"const m = require\\(''./node_modules/@neondatabase/auth/react/ui''\\); console.log\\(Object.keys\\(m\\)\\)\")",
+      "Bash(node -e \"const { Card } = require\\(''./node_modules/@mantine/core''\\); console.log\\(''Card.Section:'', Card.Section\\)\")",
+      "Bash(node -e \"const p = require\\(''./node_modules/@neondatabase/auth/package.json''\\); console.log\\(JSON.stringify\\(p.exports, null, 2\\)\\)\" /c/Users/scott/workspace/reefing-app)",
+      "Bash(node -e \"const m = require\\(''./node_modules/@mantine/core''\\); console.log\\(''CardSection:'', typeof m.CardSection\\)\" /c/Users/scott/workspace/reefing-app)"
     ]
   }
 }

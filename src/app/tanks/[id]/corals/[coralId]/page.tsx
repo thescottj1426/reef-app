@@ -1,10 +1,11 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { auth0 } from "@/lib/auth0";
+import { getAuthUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
-import { Container, Title, Text, Group, Badge, Button, Stack, Paper, SimpleGrid } from "@mantine/core";
+import { Container, Title, Text, Group, Badge, Button, Stack, SimpleGrid, Card, CardSection } from "@mantine/core";
+import { AppNav } from "@/components/AppNav";
 import { CoralPhotoGallery } from "@/features/coral/components/CoralPhotoGallery";
 
 const placementLabels: Record<string, string> = {
@@ -28,18 +29,17 @@ export default async function CoralPage({
 }) {
   const { id: tankId, coralId } = await params;
 
-  const session = await auth0.getSession();
-  if (!session) redirect("/login");
+  const { session } = await getAuthUser();
 
   const coral = await prisma.coral.findUnique({
     where: { id: coralId },
     include: {
       photos: { orderBy: { createdAt: "desc" } },
-      tank: { select: { name: true, user: { select: { auth0Id: true } } } },
+      tank: { select: { name: true, user: { select: { neonAuthId: true } } } },
     },
   });
 
-  if (!coral || coral.tankId !== tankId || coral.tank.user.auth0Id !== session.user.sub) {
+  if (!coral || coral.tankId !== tankId || coral.tank.user.neonAuthId !== session.user.id) {
     notFound();
   }
 
@@ -55,65 +55,68 @@ export default async function CoralPage({
   );
 
   return (
-    <Container size="md" py="xl">
-      <Stack>
-        <Group justify="space-between" align="center">
-          <Button component="a" href={`/tanks/${tankId}`} variant="subtle" size="sm">
+    <>
+      <AppNav />
+      <Container size="md" py="xl">
+        <Stack>
+        <Group mb="md">
+          <Button component="a" href={`/tanks/${tankId}`} variant="subtle" size="sm" color="gray">
             ← {coral.tank.name}
           </Button>
         </Group>
 
-        {photos.length > 0 && (
-          <div style={{ borderRadius: "var(--mantine-radius-md)", overflow: "hidden", maxHeight: 400 }}>
-            <img
-              src={photos[0].url}
-              alt={coral.name}
-              style={{ width: "100%", height: 400, objectFit: "cover", display: "block" }}
-            />
-          </div>
-        )}
-
-        <Group align="center" gap="sm">
-          <Title order={2}>{coral.name}</Title>
-          {coral.species && (
-            <Badge variant="light" size="lg" style={{ fontStyle: "italic" }}>
-              {coral.species}
-            </Badge>
+        <Card withBorder>
+          {photos.length > 0 && (
+            <CardSection>
+              <img
+                src={photos[0].url}
+                alt={coral.name}
+                style={{ width: "100%", height: 400, objectFit: "cover", display: "block" }}
+              />
+            </CardSection>
           )}
-        </Group>
-
-        <Paper withBorder p="md" radius="md">
-          <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
-            <Stack gap={2}>
-              <Text size="xs" c="dimmed" fw={500} tt="uppercase">Placement</Text>
-              <Text fw={500}>{coral.placement ? placementLabels[coral.placement] : "—"}</Text>
-            </Stack>
-            <Stack gap={2}>
-              <Text size="xs" c="dimmed" fw={500} tt="uppercase">Lighting</Text>
-              <Text fw={500}>{coral.lighting ? levelLabels[coral.lighting] : "—"}</Text>
-            </Stack>
-            <Stack gap={2}>
-              <Text size="xs" c="dimmed" fw={500} tt="uppercase">Flow</Text>
-              <Text fw={500}>{coral.flow ? levelLabels[coral.flow] : "—"}</Text>
-            </Stack>
-            <Stack gap={2}>
-              <Text size="xs" c="dimmed" fw={500} tt="uppercase">Acquired</Text>
-              <Text fw={500}>
-                {coral.acquiredDate ? new Date(coral.acquiredDate).toLocaleDateString() : "—"}
-              </Text>
-            </Stack>
-          </SimpleGrid>
-          {coral.notes && (
-            <Stack gap={2} mt="md">
-              <Text size="xs" c="dimmed" fw={500} tt="uppercase">Notes</Text>
-              <Text>{coral.notes}</Text>
-            </Stack>
-          )}
-        </Paper>
+          <Stack gap="lg" mt="md">
+            <Group align="center" gap="sm">
+              <Title order={2}>{coral.name}</Title>
+              {coral.species && (
+                <Badge variant="light" color="teal" size="lg" style={{ fontStyle: "italic" }}>
+                  {coral.species}
+                </Badge>
+              )}
+            </Group>
+            <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
+              <Stack gap={2}>
+                <Text size="xs" c="dimmed" fw={500} tt="uppercase">Placement</Text>
+                <Text fw={500}>{coral.placement ? placementLabels[coral.placement] : "—"}</Text>
+              </Stack>
+              <Stack gap={2}>
+                <Text size="xs" c="dimmed" fw={500} tt="uppercase">Lighting</Text>
+                <Text fw={500}>{coral.lighting ? levelLabels[coral.lighting] : "—"}</Text>
+              </Stack>
+              <Stack gap={2}>
+                <Text size="xs" c="dimmed" fw={500} tt="uppercase">Flow</Text>
+                <Text fw={500}>{coral.flow ? levelLabels[coral.flow] : "—"}</Text>
+              </Stack>
+              <Stack gap={2}>
+                <Text size="xs" c="dimmed" fw={500} tt="uppercase">Acquired</Text>
+                <Text fw={500}>
+                  {coral.acquiredDate ? new Date(coral.acquiredDate).toLocaleDateString() : "—"}
+                </Text>
+              </Stack>
+            </SimpleGrid>
+            {coral.notes && (
+              <Stack gap={2}>
+                <Text size="xs" c="dimmed" fw={500} tt="uppercase">Notes</Text>
+                <Text>{coral.notes}</Text>
+              </Stack>
+            )}
+          </Stack>
+        </Card>
 
         <Title order={3} mt="md">Photos</Title>
         <CoralPhotoGallery coralId={coralId} photos={photos} />
-      </Stack>
-    </Container>
+        </Stack>
+      </Container>
+    </>
   );
 }

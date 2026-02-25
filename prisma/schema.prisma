@@ -84,11 +84,11 @@ model CoralPhoto {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  auth0Id   String   @unique
-  username  String   @unique
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tanks     Tank[]
+  id           String   @id @default(cuid())
+  neonAuthId   String   @unique
+  username     String   @unique
+  email        String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tanks        Tank[]
 }

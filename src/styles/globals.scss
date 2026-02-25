@@ -4,6 +4,46 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
+  min-height: 100vh;
+}
+
+// Ocean-toned background for dark mode
+[data-mantine-color-scheme="dark"] body {
+  background: linear-gradient(160deg, #0d1b2a 0%, #0f2336 55%, #0b1c2c 100%);
+  background-attachment: fixed;
+}
+
+// Subtle off-white for light mode
+[data-mantine-color-scheme="light"] body {
+  background: #f4f7fb;
+}
+
+// Sticky nav header
+.app-nav {
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  background: var(--mantine-color-body);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  [data-mantine-color-scheme="dark"] & {
+    background: rgba(13, 27, 42, 0.9);
+    backdrop-filter: blur(8px);
+  }
+}
+
+// Cards — lift on hover
+.tank-card,
+.coral-card {
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  text-decoration: none !important;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--mantine-shadow-md);
+  }
 }

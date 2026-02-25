@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "prisma generate --config prisma/prisma.config.ts && next build",
     "start": "next start",
     "db:generate": "prisma generate --config prisma/prisma.config.ts",
@@ -12,13 +12,13 @@
     "db:studio": "prisma studio --config prisma/prisma.config.ts"
   },
   "dependencies": {
-    "@auth0/nextjs-auth0": "^4.0.0",
     "@aws-sdk/client-s3": "^3.996.0",
     "@aws-sdk/s3-request-presigner": "^3.996.0",
     "@mantine/core": "^8.0.0",
     "@mantine/dates": "^8.3.15",
     "@mantine/form": "^8.3.15",
     "@mantine/hooks": "^8.0.0",
+    "@neondatabase/auth": "0.2.0-beta.1",
     "@neondatabase/serverless": "^0.10.0",
     "@prisma/adapter-neon": "^7.0.0",
     "@prisma/client": "^7.4.1",

@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
-import { auth0 } from "@/lib/auth0";
+import { getAuthUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { AppNav } from "@/components/AppNav";
 import {
   Container,
   Title,
@@ -11,16 +11,14 @@ import {
   Card,
   SimpleGrid,
   Badge,
+  Box,
 } from "@mantine/core";
 
 export default async function HomePage() {
-  const session = await auth0.getSession();
-  if (!session) {
-    redirect("/login");
-  }
+  const { user } = await getAuthUser();
 
   const dbUser = await prisma.user.findUnique({
-    where: { auth0Id: session.user.sub },
+    where: { id: user.id },
     select: {
       tanks: {
         select: { id: true, name: true, type: true, volumeGal: true },
@@ -32,52 +30,46 @@ export default async function HomePage() {
   const tanks = dbUser?.tanks ?? [];
 
   return (
-    <Container size="md" py="xl">
-      <Stack>
-        <Group justify="space-between" align="center">
-          <Title order={2}>ReefBuilder</Title>
-          <Button component="a" href="/auth/logout" variant="subtle" size="sm">
-            Sign out
-          </Button>
-        </Group>
+    <>
+      <AppNav />
+      <Container size="md" py="xl">
+        <Stack gap="xl">
+          <Box>
+            <Group justify="space-between" align="center" mb="sm">
+              <Title order={3}>My Tanks</Title>
+              <Button component="a" href="/tanks/new" size="sm">
+                Add tank
+              </Button>
+            </Group>
 
-        <Text>Welcome, {session.user.name ?? session.user.email}!</Text>
-
-        <Group justify="space-between" align="center" mt="lg">
-          <Title order={3}>My Tanks</Title>
-          <Button component="a" href="/tanks/new" size="sm">
-            Add tank
-          </Button>
-        </Group>
-
-        {tanks.length === 0 ? (
-          <Text c="dimmed" size="sm">
-            You haven&apos;t added any tanks yet.
-          </Text>
-        ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-            {tanks.map((tank) => (
-              <Card
-                key={tank.id}
-                withBorder
-                radius="md"
-                p="md"
-                component="a"
-                href={`/tanks/${tank.id}`}
-                style={{ textDecoration: "none" }}
-              >
-                <Group justify="space-between" align="flex-start">
-                  <Text fw={500}>{tank.name}</Text>
-                  <Badge variant="light">{tank.type}</Badge>
-                </Group>
-                <Text c="dimmed" size="sm" mt={4}>
-                  {tank.volumeGal} gal
-                </Text>
-              </Card>
-            ))}
-          </SimpleGrid>
-        )}
-      </Stack>
-    </Container>
+            {tanks.length === 0 ? (
+              <Text c="dimmed" size="sm">
+                You haven&apos;t added any tanks yet.
+              </Text>
+            ) : (
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                {tanks.map((tank) => (
+                  <Card
+                    key={tank.id}
+                    component="a"
+                    href={`/tanks/${tank.id}`}
+                    className="tank-card"
+                    p="md"
+                  >
+                    <Group justify="space-between" align="flex-start">
+                      <Text fw={600} size="md">{tank.name}</Text>
+                      <Badge variant="light" color="teal">{tank.type}</Badge>
+                    </Group>
+                    <Text c="dimmed" size="sm" mt={6}>
+                      {tank.volumeGal} gal
+                    </Text>
+                  </Card>
+                ))}
+              </SimpleGrid>
+            )}
+          </Box>
+        </Stack>
+      </Container>
+    </>
   );
 }
