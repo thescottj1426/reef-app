@@ -39,7 +39,7 @@
       "Bash(pnpm prisma migrate dev --name add_user_profile_fields --config prisma/prisma.config.ts)",
       "Bash(ls /c/Users/scott/workspace/reefing-app/.env*)",
       "Bash(pnpm prisma generate --config prisma/prisma.config.ts)",
-      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_EPJh3cU7iRpA@ep-calm-heart-airbkkvd-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" pnpm prisma migrate deploy --config prisma/prisma.config.ts)",
+      "Bash(pnpm prisma migrate deploy --config prisma/prisma.config.ts)",
       "Bash(node -e \":*)",
       "mcp__Neon__run_sql",
       "Bash(ls /c/Users/scott/workspace/reefing-app/next.config*)"
