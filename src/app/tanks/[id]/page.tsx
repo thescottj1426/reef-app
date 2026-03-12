@@ -23,6 +23,7 @@ import { DeleteTankButton } from "@/components/DeleteTankButton";
 import { LikeButton } from "@/features/social/components/LikeButton";
 import { CommentSection } from "@/features/social/components/CommentSection";
 import { WaterParameterLog } from "@/features/tanks/components/WaterParameterLog";
+import { EquipmentList } from "@/features/tanks/components/EquipmentList";
 
 const placementLabels: Record<string, string> = {
   SANDBED: "Sand Bed",
@@ -54,6 +55,7 @@ export default async function TankPage({ params }: { params: Promise<{ id: strin
       },
       user: { select: { neonAuthId: true } },
       parameters: { orderBy: { loggedAt: "desc" }, take: 10 },
+      equipment: { orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -175,6 +177,13 @@ export default async function TankPage({ params }: { params: Promise<{ id: strin
           <WaterParameterLog
             tankId={id}
             parameters={tank.parameters}
+            isOwner={isOwner}
+          />
+
+          {/* Equipment */}
+          <EquipmentList
+            tankId={id}
+            equipment={tank.equipment}
             isOwner={isOwner}
           />
 

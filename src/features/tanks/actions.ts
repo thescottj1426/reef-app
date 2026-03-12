@@ -8,7 +8,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getAuthUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
-import { TankType } from "@/generated/prisma";
+import { TankType, EquipmentCategory } from "@/generated/prisma";
 
 const BUCKET = process.env.AWS_S3_BUCKET!;
 const REGION = process.env.AWS_REGION!;
@@ -178,4 +178,39 @@ export async function deleteTankPhoto(photoId: string, tankId: string) {
   await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: photo.s3Key }));
   await prisma.tankPhoto.delete({ where: { id: photoId } });
   revalidatePath(`/tanks/${tankId}`);
+}
+
+export async function addEquipment(
+  tankId: string,
+  input: { category: EquipmentCategory; brand?: string; model?: string; notes?: string }
+) {
+  const { session } = await getAuthUser();
+  await verifyTankOwnership(tankId, session.user.id);
+
+  await prisma.equipment.create({
+    data: {
+      tankId,
+      category: input.category,
+      brand: input.brand || null,
+      model: input.model || null,
+      notes: input.notes || null,
+    },
+  });
+
+  revalidatePath(`/tanks/${tankId}`);
+}
+
+export async function deleteEquipment(equipmentId: string) {
+  const { session } = await getAuthUser();
+
+  const eq = await prisma.equipment.findUnique({
+    where: { id: equipmentId },
+    select: { tankId: true, tank: { select: { user: { select: { neonAuthId: true } } } } },
+  });
+  if (!eq || eq.tank.user.neonAuthId !== session.user.id) {
+    throw new Error("Not found");
+  }
+
+  await prisma.equipment.delete({ where: { id: equipmentId } });
+  revalidatePath(`/tanks/${eq.tankId}`);
 }

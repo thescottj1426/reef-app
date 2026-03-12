@@ -31,6 +31,9 @@ export async function AppNav() {
             <Button component="a" href="/frags" variant="subtle" size="sm" color="gray">
               Frags
             </Button>
+            <Button component="a" href="/search" variant="subtle" size="sm" color="gray">
+              Search
+            </Button>
             <NotificationBell unreadCount={unreadCount} />
             <UserMenu
               displayName={user.displayName}

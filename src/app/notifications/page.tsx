@@ -77,13 +77,14 @@ export default async function NotificationsPage() {
                   const name = from?.displayName || (from?.username ? `@${from.username}` : "Someone");
                   const href = notifHref(n.type, n.targetType, n.targetId, from?.username);
                   return (
-                    <Group
+                    <a
                       key={n.id}
-                      gap="sm"
-                      p="md"
-                      component="a"
                       href={href}
                       style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "12px 16px",
                         textDecoration: "none",
                         color: "inherit",
                         borderBottom: i < notifications.length - 1 ? "1px solid var(--mantine-color-default-border)" : "none",
@@ -102,7 +103,7 @@ export default async function NotificationsPage() {
                         {!n.read && <Badge size="xs" color="blue" variant="filled">New</Badge>}
                         <Text size="xs" c="dimmed">{relativeDate(n.createdAt)}</Text>
                       </Group>
-                    </Group>
+                    </a>
                   );
                 })}
               </Stack>
