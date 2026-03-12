@@ -34,19 +34,70 @@ enum FlowLevel {
   HIGH
 }
 
+enum CoralEventType {
+  ACQUIRED
+  FRAGGED
+  SOLD
+  TRADED
+  GIFTED
+  OBSERVATION
+}
+
+enum TargetType {
+  TANK
+  CORAL
+}
+
+enum ListingStatus {
+  AVAILABLE
+  PENDING
+  SOLD
+}
+
+enum CoralCategory {
+  SPS
+  LPS
+  SOFTIE
+  ZOA
+  ANEMONE
+  OTHER
+}
+
+enum EquipmentCategory {
+  LIGHT
+  SKIMMER
+  RETURN_PUMP
+  POWERHEAD
+  DOSER
+  HEATER
+  CHILLER
+  ATO
+  CONTROLLER
+  REACTOR
+  OTHER
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+}
+
 model Tank {
-  id          String      @id @default(cuid())
+  id          String           @id @default(cuid())
   name        String
   volumeGal   Float
   type        TankType
   setupDate   DateTime?
   description String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   photos      TankPhoto[]
   corals      Coral[]
+  parameters  WaterParameter[]
+  equipment   Equipment[]
 }
 
 model TankPhoto {
@@ -59,19 +110,34 @@ model TankPhoto {
 }
 
 model Coral {
-  id           String          @id @default(cuid())
-  name         String
-  species      String?
-  placement    CoralPlacement?
-  lighting     LightingLevel?
-  flow         FlowLevel?
-  acquiredDate DateTime?
-  notes        String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  tankId       String
-  tank         Tank            @relation(fields: [tankId], references: [id], onDelete: Cascade)
-  photos       CoralPhoto[]
+  id              String                @id @default(cuid())
+  name            String
+  species         String?
+  category        CoralCategory?
+  placement       CoralPlacement?
+  lighting        LightingLevel?
+  flow            FlowLevel?
+  acquiredDate    DateTime?
+  notes           String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  tankId          String
+  tank            Tank                  @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  photos          CoralPhoto[]
+  ownershipEvents CoralOwnershipEvent[]
+  fragListings    FragListing[]
+}
+
+model CoralOwnershipEvent {
+  id        String         @id @default(cuid())
+  coralId   String
+  coral     Coral          @relation(fields: [coralId], references: [id], onDelete: Cascade)
+  eventType CoralEventType
+  date      DateTime
+  source    String?
+  notes     String?
+  price     Float?
+  createdAt DateTime       @default(now())
 }
 
 model CoralPhoto {
@@ -83,16 +149,110 @@ model CoralPhoto {
   createdAt DateTime @default(now())
 }
 
+model WaterParameter {
+  id          String   @id @default(cuid())
+  tankId      String
+  tank        Tank     @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  loggedAt    DateTime
+  temperature Float?
+  salinity    Float?
+  ph          Float?
+  alkalinity  Float?
+  calcium     Float?
+  magnesium   Float?
+  nitrate     Float?
+  phosphate   Float?
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model Like {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType TargetType
+  targetId   String
+  createdAt  DateTime   @default(now())
+
+  @@unique([userId, targetType, targetId])
+}
+
+model Comment {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType TargetType
+  targetId   String
+  body       String
+  createdAt  DateTime   @default(now())
+}
+
+model FragListing {
+  id        String        @id @default(cuid())
+  coralId   String
+  coral     Coral         @relation(fields: [coralId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  price     Float?
+  qty       Int           @default(1)
+  notes     String?
+  status    ListingStatus @default(AVAILABLE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model Equipment {
+  id        String            @id @default(cuid())
+  tankId    String
+  tank      Tank              @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  category  EquipmentCategory
+  brand     String?
+  model     String?
+  notes     String?
+  createdAt DateTime          @default(now())
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation("NotificationsReceived", fields: [userId], references: [id], onDelete: Cascade)
+  type       NotificationType
+  fromUserId String?
+  fromUser   User?            @relation("NotificationsSent", fields: [fromUserId], references: [id], onDelete: SetNull)
+  targetType String?
+  targetId   String?
+  read       Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+}
+
 model User {
-  id           String   @id @default(cuid())
-  neonAuthId   String   @unique
-  username     String   @unique
-  email        String   @unique
-  displayName  String?
-  bio          String?
-  location     String?
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  tanks        Tank[]
+  id                    String         @id @default(cuid())
+  neonAuthId            String         @unique
+  username              String         @unique
+  email                 String         @unique
+  displayName           String?
+  bio                   String?
+  location              String?
+  avatarUrl             String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  tanks                 Tank[]
+  likes                 Like[]
+  comments              Comment[]
+  fragListings          FragListing[]
+  following             Follow[]       @relation("Following")
+  followers             Follow[]       @relation("Followers")
+  notificationsReceived Notification[] @relation("NotificationsReceived")
+  notificationsSent     Notification[] @relation("NotificationsSent")
 }

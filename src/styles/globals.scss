@@ -47,3 +47,13 @@ body {
     box-shadow: var(--mantine-shadow-md);
   }
 }
+
+// Gradient placeholder shown when a card has no photo
+.card-photo-placeholder {
+  height: 200px;
+  background: linear-gradient(135deg, #0a3d3d 0%, #0d1b2a 100%);
+
+  &.coral-placeholder {
+    height: 140px;
+  }
+}

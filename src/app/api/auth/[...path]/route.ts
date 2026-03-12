@@ -5,6 +5,30 @@ export const dynamic = "force-dynamic";
 
 const handlers = auth.handler();
 
+// Neon Auth beta bug: sending existing session cookies with sign-in/sign-up
+// causes the backend to crash. Strip them for those endpoints.
+const NEON_AUTH_COOKIE_PREFIX = "__Secure-neon-auth.";
+
+function stripNeonAuthCookies(req: NextRequest): NextRequest {
+  const cookieHeader = req.headers.get("cookie");
+  if (!cookieHeader) return req;
+
+  const filtered = cookieHeader
+    .split(";")
+    .map((c) => c.trim())
+    .filter((c) => !c.startsWith(NEON_AUTH_COOKIE_PREFIX))
+    .join("; ");
+
+  const headers = new Headers(req.headers);
+  if (filtered) {
+    headers.set("cookie", filtered);
+  } else {
+    headers.delete("cookie");
+  }
+
+  return new NextRequest(req.url, { method: req.method, headers, body: req.body } as NextRequest);
+}
+
 export async function GET(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
   const res = await handlers.GET(req, ctx);
   if (!res.ok) {
@@ -16,50 +40,18 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ path: strin
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
   const { path } = await ctx.params;
-  const upstreamPath = path.join("/");
-  const baseUrl = process.env.NEON_AUTH_BASE_URL!;
-  const upstreamUrl = `${baseUrl}/${upstreamPath}`;
-
-  const body = await req.text();
-  const origin = req.headers.get("origin") || new URL(req.url).origin;
-  const contentType = req.headers.get("content-type") || "application/json";
-
-  // Only forward session cookies for sign-out and session management, not for sign-in/sign-up
-  const needsCookies = upstreamPath === "sign-out" || upstreamPath === "revoke-session" || upstreamPath === "refresh-token";
-  const cookie = needsCookies ? (req.headers.get("cookie") || "") : "";
-
-  console.log(`[auth:POST] ${upstreamPath} body:${body.length}chars`);
+  const isCredentialEndpoint = path[0] === "sign-in" || path[0] === "sign-up";
+  const proxiedReq = isCredentialEndpoint ? stripNeonAuthCookies(req) : req;
 
   try {
-    const upstream = await fetch(upstreamUrl, {
-      method: "POST",
-      headers: {
-        "content-type": contentType,
-        "origin": origin,
-        ...(cookie ? { "cookie": cookie } : {}),
-      },
-      body: body || undefined,
-    });
-
-    const text = await upstream.text();
-
-    if (!upstream.ok) {
-      const hdrs = Object.fromEntries(upstream.headers.entries());
-      console.error(`[auth:POST] ${upstreamPath} → ${upstream.status}:`, text || "(empty)", "headers:", JSON.stringify(hdrs));
+    const res = await handlers.POST(proxiedReq, ctx);
+    if (!res.ok) {
+      const text = await res.clone().text();
+      console.error(`[auth:POST] ${new URL(req.url).pathname} → ${res.status}:`, text);
     }
-
-    const resHeaders = new Headers();
-    resHeaders.set("content-type", upstream.headers.get("content-type") || "application/json");
-    for (const cookie of upstream.headers.getSetCookie()) {
-      resHeaders.append("set-cookie", cookie);
-    }
-
-    return new Response(text || null, {
-      status: upstream.status,
-      headers: resHeaders,
-    });
+    return res;
   } catch (err) {
-    console.error(`[auth:POST] ${upstreamPath} threw:`, err);
+    console.error(`[auth:POST] ${new URL(req.url).pathname} threw:`, err);
     return Response.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

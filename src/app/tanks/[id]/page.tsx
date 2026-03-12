@@ -5,8 +5,24 @@ import { getAuthUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
 import { AppNav } from "@/components/AppNav";
-import { Container, Title, Text, Group, Badge, Button, Stack, SimpleGrid, Card, CardSection, Paper } from "@mantine/core";
+import {
+  Container,
+  Title,
+  Text,
+  Group,
+  Badge,
+  Button,
+  Stack,
+  SimpleGrid,
+  Card,
+  CardSection,
+  Paper,
+} from "@mantine/core";
 import { PhotoGallery } from "@/features/tanks/components/PhotoGallery";
+import { DeleteTankButton } from "@/components/DeleteTankButton";
+import { LikeButton } from "@/features/social/components/LikeButton";
+import { CommentSection } from "@/features/social/components/CommentSection";
+import { WaterParameterLog } from "@/features/tanks/components/WaterParameterLog";
 
 const placementLabels: Record<string, string> = {
   SANDBED: "Sand Bed",
@@ -16,30 +32,68 @@ const placementLabels: Record<string, string> = {
   FRAG_RACK: "Frag Rack",
 };
 
+const categoryColors: Record<string, string> = {
+  SPS: "red", LPS: "teal", SOFTIE: "violet",
+  ZOA: "yellow", ANEMONE: "pink", OTHER: "gray",
+};
+
 export default async function TankPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const { session } = await getAuthUser();
+  const { session, user } = await getAuthUser();
 
   const tank = await prisma.tank.findUnique({
     where: { id },
     include: {
       photos: { orderBy: { createdAt: "desc" } },
-      corals: { orderBy: { createdAt: "desc" } },
+      corals: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          photos: { take: 1, orderBy: { createdAt: "desc" } },
+        },
+      },
       user: { select: { neonAuthId: true } },
+      parameters: { orderBy: { loggedAt: "desc" }, take: 10 },
     },
   });
 
-  if (!tank || tank.user.neonAuthId !== session.user.id) notFound();
+  if (!tank) notFound();
+  const isOwner = tank.user.neonAuthId === session.user.id;
 
-  const photos = await Promise.all(
-    tank.photos.map(async (photo) => ({
-      id: photo.id,
-      url: await getSignedUrl(
-        s3,
-        new GetObjectCommand({ Bucket: process.env.AWS_S3_BUCKET!, Key: photo.s3Key }),
-        { expiresIn: 3600 }
-      ),
+  const [photos, likeCount, userLike, comments] = await Promise.all([
+    Promise.all(
+      tank.photos.map(async (photo) => ({
+        id: photo.id,
+        url: await getSignedUrl(
+          s3,
+          new GetObjectCommand({ Bucket: process.env.AWS_S3_BUCKET!, Key: photo.s3Key }),
+          { expiresIn: 3600 }
+        ),
+      }))
+    ),
+    prisma.like.count({ where: { targetType: "TANK", targetId: id } }),
+    prisma.like.findUnique({
+      where: { userId_targetType_targetId: { userId: user.id, targetType: "TANK", targetId: id } },
+    }),
+    prisma.comment.findMany({
+      where: { targetType: "TANK", targetId: id },
+      include: {
+        user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+
+  const coralsWithPhotos = await Promise.all(
+    tank.corals.map(async (coral) => ({
+      ...coral,
+      coverUrl: coral.photos[0]
+        ? await getSignedUrl(
+            s3,
+            new GetObjectCommand({ Bucket: process.env.AWS_S3_BUCKET!, Key: coral.photos[0].s3Key }),
+            { expiresIn: 3600 }
+          )
+        : null,
     }))
   );
 
@@ -65,9 +119,19 @@ export default async function TankPage({ params }: { params: Promise<{ id: strin
               </CardSection>
             )}
             <Stack gap="lg" mt="md">
-              <Group align="center" gap="sm">
-                <Title order={2}>{tank.name}</Title>
-                <Badge variant="light" color="teal" size="lg">{tank.type}</Badge>
+              <Group justify="space-between" align="flex-start">
+                <Group align="center" gap="sm">
+                  <Title order={2}>{tank.name}</Title>
+                  <Badge variant="light" color="teal" size="lg">{tank.type}</Badge>
+                </Group>
+                {isOwner && (
+                  <Group gap="xs">
+                    <Button component="a" href={`/tanks/${id}/edit`} variant="subtle" size="sm">
+                      Edit
+                    </Button>
+                    <DeleteTankButton tankId={id} tankName={tank.name} />
+                  </Group>
+                )}
               </Group>
               <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="lg">
                 <Stack gap={4}>
@@ -95,35 +159,79 @@ export default async function TankPage({ params }: { params: Promise<{ id: strin
                   <Text>{tank.description}</Text>
                 </Stack>
               )}
+              <Group>
+                <LikeButton
+                  targetType="TANK"
+                  targetId={id}
+                  initialCount={likeCount}
+                  initialLiked={!!userLike}
+                  revalidate={`/tanks/${id}`}
+                />
+              </Group>
             </Stack>
           </Card>
 
+          {/* Water Parameters */}
+          <WaterParameterLog
+            tankId={id}
+            parameters={tank.parameters}
+            isOwner={isOwner}
+          />
+
           <Paper withBorder p="lg">
-            <Group justify="space-between" align="center" mb="sm">
+            <Group justify="space-between" align="center" mb="md">
               <Title order={3}>Corals</Title>
-              <Button component="a" href={`/tanks/${id}/corals/new`} size="sm">
-                Add Coral
-              </Button>
+              {isOwner && (
+                <Button component="a" href={`/tanks/${id}/corals/new`} size="sm">
+                  Add Coral
+                </Button>
+              )}
             </Group>
 
-            {tank.corals.length === 0 ? (
-              <Text c="dimmed" size="sm">No corals yet. Add your first coral!</Text>
+            {coralsWithPhotos.length === 0 ? (
+              <Stack align="center" gap="sm" py="xl">
+                <Text size="2rem">🪸</Text>
+                <Text fw={600}>No corals yet</Text>
+                <Text c="dimmed" size="sm">
+                  {isOwner ? "Add your first coral to start building your collection." : "This tank has no corals yet."}
+                </Text>
+                {isOwner && (
+                  <Button component="a" href={`/tanks/${id}/corals/new`} size="sm" mt="xs">
+                    Add coral
+                  </Button>
+                )}
+              </Stack>
             ) : (
               <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="sm">
-                {tank.corals.map((coral) => (
+                {coralsWithPhotos.map((coral) => (
                   <Card
                     key={coral.id}
                     component="a"
                     href={`/tanks/${id}/corals/${coral.id}`}
                     className="coral-card"
-                    p="sm"
+                    p={0}
+                    withBorder
                   >
-                    <Stack gap={4}>
+                    <CardSection>
+                      {coral.coverUrl ? (
+                        <img
+                          src={coral.coverUrl}
+                          alt={coral.name}
+                          style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }}
+                        />
+                      ) : (
+                        <div className="card-photo-placeholder coral-placeholder" />
+                      )}
+                    </CardSection>
+                    <Stack gap={4} p="sm">
                       <Text fw={600} size="sm" lineClamp={1}>{coral.name}</Text>
                       {coral.species && (
                         <Text size="xs" c="dimmed" fs="italic" lineClamp={1}>{coral.species}</Text>
                       )}
                       <Group gap={4} mt={2}>
+                        {coral.category && (
+                          <Badge size="xs" variant="light" color={categoryColors[coral.category]}>{coral.category}</Badge>
+                        )}
                         {coral.placement && (
                           <Badge size="xs" variant="light" color="teal">{placementLabels[coral.placement]}</Badge>
                         )}
@@ -141,9 +249,23 @@ export default async function TankPage({ params }: { params: Promise<{ id: strin
             )}
           </Paper>
 
+          {isOwner && (
+            <Paper withBorder p="lg">
+              <Title order={3} mb="sm">Photos</Title>
+              <PhotoGallery tankId={id} photos={photos} />
+            </Paper>
+          )}
+
+          {/* Comments */}
           <Paper withBorder p="lg">
-            <Title order={3} mb="sm">Photos</Title>
-            <PhotoGallery tankId={id} photos={photos} />
+            <Title order={4} mb="md">Comments</Title>
+            <CommentSection
+              targetType="TANK"
+              targetId={id}
+              initialComments={comments}
+              currentUserId={user.id}
+              revalidate={`/tanks/${id}`}
+            />
           </Paper>
         </Stack>
       </Container>

@@ -1,8 +1,15 @@
-import { Container, Group, Text, Button, Title } from "@mantine/core";
+import { Container, Group, Title, Button } from "@mantine/core";
 import { getAuthUser } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
+import { UserMenu } from "./UserMenu";
+import { NotificationBell } from "./NotificationBell";
 
 export async function AppNav() {
-  const { session } = await getAuthUser();
+  const { session, user } = await getAuthUser();
+
+  const unreadCount = await prisma.notification.count({
+    where: { userId: user.id, read: false },
+  });
 
   return (
     <nav className="app-nav">
@@ -13,22 +20,23 @@ export async function AppNav() {
               ReefBuilder
             </Title>
           </a>
-          <Group gap="xs" align="center">
-            <Button component="a" href="/" variant="subtle" size="xs" color="gray">
+
+          <Group gap="sm" align="center">
+            <Button component="a" href="/" variant="subtle" size="sm" color="gray">
               Dashboard
             </Button>
-            <Button component="a" href="/users" variant="subtle" size="xs" color="gray">
-              Profiles
+            <Button component="a" href="/users" variant="subtle" size="sm" color="gray">
+              Community
             </Button>
-            <Button component="a" href="/settings/profile" variant="subtle" size="xs" color="gray">
-              Edit Profile
+            <Button component="a" href="/frags" variant="subtle" size="sm" color="gray">
+              Frags
             </Button>
-            <Text size="sm" c="dimmed">
-              {session.user.name ?? session.user.email}
-            </Text>
-            <Button component="a" href="/auth/sign-out" variant="subtle" size="xs" color="gray">
-              Sign out
-            </Button>
+            <NotificationBell unreadCount={unreadCount} />
+            <UserMenu
+              displayName={user.displayName}
+              username={user.username}
+              avatarUrl={user.avatarUrl}
+            />
           </Group>
         </Group>
       </Container>

@@ -8,7 +8,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getAuthUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
-import type { CoralPlacement, LightingLevel, FlowLevel } from "@/generated/prisma";
+import type { CoralPlacement, LightingLevel, FlowLevel, CoralEventType, CoralCategory } from "@/generated/prisma";
 
 const BUCKET = process.env.AWS_S3_BUCKET!;
 const REGION = process.env.AWS_REGION!;
@@ -39,6 +39,7 @@ export async function createCoral(
   input: {
     name: string;
     species?: string;
+    category?: CoralCategory;
     placement?: CoralPlacement;
     lighting?: LightingLevel;
     flow?: FlowLevel;
@@ -54,6 +55,7 @@ export async function createCoral(
       tankId,
       name: input.name,
       species: input.species || null,
+      category: input.category || null,
       placement: input.placement || null,
       lighting: input.lighting || null,
       flow: input.flow || null,
@@ -64,6 +66,48 @@ export async function createCoral(
 
   revalidatePath(`/tanks/${tankId}`);
   redirect(`/tanks/${tankId}/corals/${coral.id}`);
+}
+
+export async function updateCoral(
+  coralId: string,
+  input: {
+    name: string;
+    species?: string;
+    category?: CoralCategory;
+    placement?: CoralPlacement;
+    lighting?: LightingLevel;
+    flow?: FlowLevel;
+    acquiredDate?: string;
+    notes?: string;
+  }
+) {
+  const { session } = await getAuthUser();
+  const coral = await verifyCoralOwnership(coralId, session.user.id);
+
+  await prisma.coral.update({
+    where: { id: coralId },
+    data: {
+      name: input.name,
+      species: input.species || null,
+      category: input.category || null,
+      placement: input.placement || null,
+      lighting: input.lighting || null,
+      flow: input.flow || null,
+      acquiredDate: input.acquiredDate ? new Date(input.acquiredDate) : null,
+      notes: input.notes || null,
+    },
+  });
+
+  revalidatePath(`/tanks/${coral.tankId}/corals/${coralId}`);
+  redirect(`/tanks/${coral.tankId}/corals/${coralId}`);
+}
+
+export async function deleteCoral(coralId: string) {
+  const { session } = await getAuthUser();
+  const coral = await verifyCoralOwnership(coralId, session.user.id);
+
+  await prisma.coral.delete({ where: { id: coralId } });
+  redirect(`/tanks/${coral.tankId}`);
 }
 
 export async function getPresignedCoralUploadUrl(
@@ -91,6 +135,57 @@ export async function saveCoralPhoto(coralId: string, s3Key: string) {
   const url = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${s3Key}`;
   await prisma.coralPhoto.create({ data: { coralId, s3Key, url } });
   revalidatePath(`/tanks/${coral.tankId}/corals/${coralId}`);
+}
+
+export async function addCoralEvent(
+  coralId: string,
+  input: {
+    eventType: CoralEventType;
+    date: string;
+    source?: string;
+    notes?: string;
+    price?: number;
+  }
+) {
+  const { session } = await getAuthUser();
+  const coral = await verifyCoralOwnership(coralId, session.user.id);
+
+  await prisma.coralOwnershipEvent.create({
+    data: {
+      coralId,
+      eventType: input.eventType,
+      date: new Date(input.date),
+      source: input.source || null,
+      notes: input.notes || null,
+      price: input.price ?? null,
+    },
+  });
+
+  revalidatePath(`/tanks/${coral.tankId}/corals/${coralId}`);
+}
+
+export async function deleteCoralEvent(eventId: string) {
+  const { session } = await getAuthUser();
+
+  const event = await prisma.coralOwnershipEvent.findUnique({
+    where: { id: eventId },
+    select: {
+      coral: {
+        select: {
+          tankId: true,
+          id: true,
+          tank: { select: { user: { select: { neonAuthId: true } } } },
+        },
+      },
+    },
+  });
+
+  if (!event || event.coral.tank.user.neonAuthId !== session.user.id) {
+    throw new Error("Event not found");
+  }
+
+  await prisma.coralOwnershipEvent.delete({ where: { id: eventId } });
+  revalidatePath(`/tanks/${event.coral.tankId}/corals/${event.coral.id}`);
 }
 
 export async function deleteCoralPhoto(photoId: string, coralId: string) {

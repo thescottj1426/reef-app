@@ -4,17 +4,27 @@ import { useState } from "react";
 import { useForm } from "@mantine/form";
 import { TextInput, Textarea, Select, Button, Stack, Group, Text } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
-import { createCoral } from "@/features/coral/actions";
+import { createCoral, updateCoral } from "@/features/coral/actions";
 
 type FormValues = {
   name: string;
   species: string;
+  category: string;
   placement: string;
   lighting: string;
   flow: string;
   acquiredDate: Date | string | null;
   notes: string;
 };
+
+const categoryOptions = [
+  { value: "SPS", label: "SPS — Small Polyp Stony" },
+  { value: "LPS", label: "LPS — Large Polyp Stony" },
+  { value: "SOFTIE", label: "Softie" },
+  { value: "ZOA", label: "Zoanthid / Palythoa" },
+  { value: "ANEMONE", label: "Anemone" },
+  { value: "OTHER", label: "Other" },
+];
 
 const placementOptions = [
   { value: "SANDBED", label: "Sand Bed" },
@@ -30,14 +40,22 @@ const levelOptions = [
   { value: "HIGH", label: "High" },
 ];
 
-export function CoralForm({ tankId }: { tankId: string }) {
+interface CoralFormProps {
+  tankId: string;
+  coralId?: string;
+  initialValues?: FormValues;
+}
+
+export function CoralForm({ tankId, coralId, initialValues }: CoralFormProps) {
+  const isEdit = !!coralId;
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<FormValues>({
-    initialValues: {
+    initialValues: initialValues ?? {
       name: "",
       species: "",
+      category: "",
       placement: "",
       lighting: "",
       flow: "",
@@ -53,9 +71,10 @@ export function CoralForm({ tankId }: { tankId: string }) {
     setSubmitting(true);
     setError(null);
     try {
-      await createCoral(tankId, {
+      const payload = {
         name: values.name.trim(),
         species: values.species.trim() || undefined,
+        category: (values.category || undefined) as Parameters<typeof createCoral>[1]["category"],
         placement: (values.placement || undefined) as Parameters<typeof createCoral>[1]["placement"],
         lighting: (values.lighting || undefined) as Parameters<typeof createCoral>[1]["lighting"],
         flow: (values.flow || undefined) as Parameters<typeof createCoral>[1]["flow"],
@@ -63,7 +82,12 @@ export function CoralForm({ tankId }: { tankId: string }) {
           ? String(values.acquiredDate).split("T")[0]
           : undefined,
         notes: values.notes.trim() || undefined,
-      });
+      };
+      if (isEdit) {
+        await updateCoral(coralId, payload);
+      } else {
+        await createCoral(tankId, payload);
+      }
     } catch (err) {
       if (
         err !== null &&
@@ -95,6 +119,14 @@ export function CoralForm({ tankId }: { tankId: string }) {
           label="Species"
           placeholder="e.g. Euphyllia ancora"
           {...form.getInputProps("species")}
+        />
+
+        <Select
+          label="Category"
+          placeholder="Coral type"
+          data={categoryOptions}
+          clearable
+          {...form.getInputProps("category")}
         />
 
         <Select
@@ -141,7 +173,7 @@ export function CoralForm({ tankId }: { tankId: string }) {
             Cancel
           </Button>
           <Button type="submit" loading={submitting}>
-            Add Coral
+            {isEdit ? "Save Changes" : "Add Coral"}
           </Button>
         </Group>
       </Stack>

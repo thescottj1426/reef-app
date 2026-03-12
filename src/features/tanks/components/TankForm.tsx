@@ -14,7 +14,7 @@ import {
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import { TankType } from "@/generated/prisma";
-import { createTank } from "@/features/tanks/actions";
+import { createTank, updateTank } from "@/features/tanks/actions";
 
 const TANK_TYPE_OPTIONS = [
   { value: "FOWLR", label: "FOWLR (Fish Only with Live Rock)" },
@@ -23,12 +23,24 @@ const TANK_TYPE_OPTIONS = [
   { value: "PREDATOR", label: "Predator" },
 ];
 
-export function TankForm() {
+interface TankFormProps {
+  tankId?: string;
+  initialValues?: {
+    name: string;
+    volumeGal: number;
+    type: TankType;
+    setupDate: Date | null;
+    description: string;
+  };
+}
+
+export function TankForm({ tankId, initialValues }: TankFormProps) {
+  const isEdit = !!tankId;
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm({
-    initialValues: {
+    initialValues: initialValues ?? {
       name: "",
       volumeGal: "" as unknown as number,
       type: "" as TankType,
@@ -46,13 +58,18 @@ export function TankForm() {
     setSubmitting(true);
     setServerError(null);
     try {
-      await createTank({
+      const payload = {
         name: values.name,
         volumeGal: values.volumeGal,
         type: values.type,
         setupDate: values.setupDate,
         description: values.description,
-      });
+      };
+      if (isEdit) {
+        await updateTank(tankId, payload);
+      } else {
+        await createTank(payload);
+      }
     } catch (err) {
       if (
         err !== null &&
@@ -118,11 +135,16 @@ export function TankForm() {
         />
 
         <Group justify="flex-end" mt="md">
-          <Button component="a" href="/" variant="subtle" disabled={submitting}>
+          <Button
+            component="a"
+            href={isEdit ? `/tanks/${tankId}` : "/"}
+            variant="subtle"
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button type="submit" loading={submitting}>
-            Create Tank
+            {isEdit ? "Save Changes" : "Create Tank"}
           </Button>
         </Group>
       </Stack>
